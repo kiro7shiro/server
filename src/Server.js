@@ -1,6 +1,5 @@
 const { promisify } = require('util')
 const fs = require('fs')
-const { createLogger, format, transports } = require('winston')
 const express = require('express')
 const cors = require('cors')
 const http = require('http')
@@ -16,7 +15,8 @@ class Server {
      * Setup the server
      * @param {Object} app the express js application object
      */
-    constructor(app) {
+    constructor(logger, app) {
+        this.logger = logger
         this.app = app
         // mongodb
         const { DB_CLUSTER, DB_USER, DB_USER_PASSWORD } = process.env
@@ -45,7 +45,7 @@ class Server {
         try {
             // mongoose
             await this.dbConnection.connect()
-            console.log('Database connected')
+            this.logger.log('info', 'Database connected')
             // startup
             await this.listen()
         } catch (error) {
@@ -53,7 +53,7 @@ class Server {
         }
     }
     /**
-     * Start listening on ports 80 and 443. Usually not called directly. 
+     * Start listening on ports 80 and 443. Usually not called directly.
      * Call initalize() insead.
      */
     async listen({ httpPort = 80, httpsPort = 443 } = {}) {
@@ -61,9 +61,9 @@ class Server {
             const httpPromise = promisify(this.httpServer.listen.bind(this.httpServer))
             const httpsPromise = promisify(this.httpsServer.listen.bind(this.httpsServer))
             await httpPromise(httpPort)
-            console.log(`HTTP server listening on port: ${httpPort}`)
+            this.logger.log('info', `HTTP server listening on port: ${httpPort}`)
             await httpsPromise(httpsPort)
-            console.log(`HTTPS server listening on port: ${httpsPort}`)
+            this.logger.log('info', `HTTPS server listening on port: ${httpsPort}`)
         } catch (error) {
             return error
         }
@@ -74,13 +74,13 @@ class Server {
     async terminate() {
         try {
             await this.dbConnection.disconnect()
-            console.log('DbConnection closed')
+            this.logger.log('info', 'Database disconnected')
             const httpPromise = promisify(this.httpServer.close.bind(this.httpServer))
             const httpsPromise = promisify(this.httpsServer.close.bind(this.httpsServer))
             await httpPromise()
-            console.log('HTTP server closed')
+            this.logger.log('info', 'HTTP server closed')
             await httpsPromise()
-            console.log('HTTPS server closed')
+            this.logger.log('info', 'HTTPS server closed')
         } catch (error) {
             return error
         }
