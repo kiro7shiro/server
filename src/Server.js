@@ -1,23 +1,36 @@
-const { promisify } = require('util')
-const fs = require('fs')
-const express = require('express')
 const cors = require('cors')
+const express = require('express')
+const ejsLayouts = require('express-ejs-layouts')
+const fs = require('fs')
+const flash = require('connect-flash')
 const http = require('http')
 const https = require('https')
-const ejsLayouts = require('express-ejs-layouts')
-const { DatabaseConnection } = require('./DatabaseConnection.js')
+const session = require('express-session')
+const path = require('path')
+const passport = require('passport')
+const { promisify } = require('util')
 
-// load env config
-require('dotenv').config()
+const { DatabaseConnection } = require('./DatabaseConnection.js')
+const { Project } = require('./Project.js')
 
 class Server {
     /**
      * Setup the server
+     * @param {Object} logger a winston logger object
      * @param {Object} app the express js application object
+     * @param {Object} [options]
+     * @param {String} [options.projectsPath] path where the projects are stored
+     * @param {Number} [options.httpPort] port number for the http server
+     * @param {Number} [options.httpsPort] port number for the https server
      */
-    constructor(logger, app) {
+    constructor(logger, app, { projectsPath = '../', httpPort = 80, httpsPort = 443 } = {}) {
         this.logger = logger
         this.app = app
+        this.ports = {
+            http: httpPort,
+            https: httpsPort,
+        }
+        this.projectsPath = projectsPath
         // mongodb
         const { DB_CLUSTER, DB_USER, DB_USER_PASSWORD } = process.env
         this.dbConnection = new DatabaseConnection(DB_USER, DB_USER_PASSWORD, DB_CLUSTER)
@@ -37,24 +50,57 @@ class Server {
         // ejs
         app.set('view engine', 'ejs')
         app.use(ejsLayouts)
+        //passport config
+        require('../config/passport.js')(passport)
+        // express session
+        app.use(
+            session({
+                secret: process.env.SESSION_SECRET,
+                resave: true,
+                saveUninitialized: true,
+            })
+        )
+        app.use(passport.initialize())
+        app.use(passport.session())
+        //use flash
+        app.use(flash())
+        app.use(function (req, res, next) {
+            res.locals.success_msg = req.flash('success_msg')
+            res.locals.error_msg = req.flash('error_msg')
+            res.locals.error = req.flash('error')
+            next()
+        })
+        // routes
+        app.use('/', require('../routes/index.js'))
+        app.use('/dashboard', require('../routes/dashboard.js'))
+        app.use('/users', require('../routes/users.js'))
+        app.locals.server = this
     }
+    /**
+     * Add a project to host on the server.
+     * @param {Object} project new project to hosted
+     */
+    add(project) {}
     /**
      * Initalize the server and startup listening.
      */
     async initalize() {
         try {
-            // mongoose
+            // database
             await this.dbConnection.connect()
             this.logger.log('info', 'Database connected')
             // startup
-            await this.listen()
+            await this.listen({ httpPort: this.ports.http, httpsPort: this.ports.https })
         } catch (error) {
             return error
         }
     }
     /**
-     * Start listening on ports 80 and 443. Usually not called directly.
-     * Call initalize() insead.
+     * Start http and https server. Usually not called directly.
+     * Call initalize() instead.
+     * @param {Object} [options]
+     * @param {Number} [options.httpPort] port number for the http server
+     * @param {Number} [options.httpsPort] port number for the https server
      */
     async listen({ httpPort = 80, httpsPort = 443 } = {}) {
         try {
@@ -67,6 +113,17 @@ class Server {
         } catch (error) {
             return error
         }
+    }
+    /**
+     * List directories in the projects folder.
+     */
+    listProjects() {
+        const root = path.resolve(this.projectsPath)
+        const dirs = fs.readdirSync(root).filter(function (item) {
+            const file = path.resolve(root, item)
+            return item !== 'server' && fs.statSync(file).isDirectory()
+        })
+        return dirs
     }
     /**
      * Terminate the server and cancel all operations.
