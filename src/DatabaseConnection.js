@@ -1,13 +1,15 @@
 const mongoose = require('mongoose')
 
+let uri = null
+
 class DatabaseConnection {
     constructor(user, password, cluster) {
         this.connected = false
-        this.uri = `mongodb+srv://${user}:${password}@${cluster}/?retryWrites=true&w=majority`
+        uri = `mongodb+srv://${user}:${password}@${cluster}/?retryWrites=true&w=majority`
     }
     async connect() {
         try {
-            await mongoose.connect(this.uri)
+            await mongoose.connect(uri)
             this.connected = true
         } catch (error) {
             return error

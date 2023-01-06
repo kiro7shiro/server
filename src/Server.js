@@ -10,6 +10,7 @@ const path = require('path')
 const passport = require('passport')
 const { promisify } = require('util')
 
+const { ensureAuthenticated } = require('../config/authorize.js')
 const { DatabaseConnection } = require('./DatabaseConnection.js')
 const { Project } = require('./Project.js')
 
@@ -23,18 +24,22 @@ class Server {
      * @param {Number} [options.httpPort] port number for the http server
      * @param {Number} [options.httpsPort] port number for the https server
      */
-    constructor(logger, app, { projectsPath = '../', httpPort = 80, httpsPort = 443 } = {}) {
+    constructor(logger, app, { projectsPath = './', httpPort = 80, httpsPort = 443 } = {}) {
+        // instance
         this.logger = logger
         this.app = app
         this.ports = {
             http: httpPort,
             https: httpsPort,
         }
-        this.projectsPath = projectsPath
+        this.projects = []
+        // FIXME : projectsPath setting 
+        this.projectsPath = path.resolve(process.env.PROJECTS)
         // mongodb
         const { DB_CLUSTER, DB_USER, DB_USER_PASSWORD } = process.env
         this.dbConnection = new DatabaseConnection(DB_USER, DB_USER_PASSWORD, DB_CLUSTER)
         // http
+        this.running = false
         this.httpServer = http.createServer(app)
         this.httpsServer = https.createServer(
             {
@@ -70,17 +75,21 @@ class Server {
             res.locals.error = req.flash('error')
             next()
         })
-        // routes
+        // self reference
+        app.locals.server = this
+        // add basic routes
         app.use('/', require('../routes/index.js'))
         app.use('/dashboard', require('../routes/dashboard.js'))
         app.use('/users', require('../routes/users.js'))
-        app.locals.server = this
     }
     /**
      * Add a project to host on the server.
-     * @param {Object} project new project to hosted
+     * @param {Project} project new project to be hosted
      */
-    add(project) {}
+    add(project) {
+        this.app.use(`/${project.name}`, ensureAuthenticated, project.app)
+        this.logger.log('info', `added route for: /${project.name}`)
+    }
     /**
      * Initalize the server and startup listening.
      */
@@ -89,6 +98,12 @@ class Server {
             // database
             await this.dbConnection.connect()
             this.logger.log('info', 'Database connected')
+            // projects
+            const projects = this.projects = await this.listProjects()
+            for (let pCnt = 0; pCnt < projects.length; pCnt++) {
+                const project = projects[pCnt]
+                this.add(project)
+            }
             // startup
             await this.listen({ httpPort: this.ports.http, httpsPort: this.ports.https })
         } catch (error) {
@@ -110,6 +125,7 @@ class Server {
             this.logger.log('info', `HTTP server listening on port: ${httpPort}`)
             await httpsPromise(httpsPort)
             this.logger.log('info', `HTTPS server listening on port: ${httpsPort}`)
+            this.running = true
         } catch (error) {
             return error
         }
@@ -117,13 +133,24 @@ class Server {
     /**
      * List directories in the projects folder.
      */
-    listProjects() {
-        const root = path.resolve(this.projectsPath)
-        const dirs = fs.readdirSync(root).filter(function (item) {
-            const file = path.resolve(root, item)
-            return item !== 'server' && fs.statSync(file).isDirectory()
-        })
-        return dirs
+    async listProjects() {
+        try {
+            const root = path.resolve(this.projectsPath)
+            const self = path.resolve(__dirname, '../')
+            const projects = (await fs.promises.readdir(root))
+                .filter(function (item) {
+                    const file = path.resolve(root, item)
+                    return fs.statSync(file).isDirectory() && file !== self
+                })
+                .map(function (item) {
+                    const file = path.resolve(root, item)
+                    const project = new Project(file)
+                    return project
+                })
+            return projects
+        } catch (error) {
+            return error
+        }
     }
     /**
      * Terminate the server and cancel all operations.
@@ -138,6 +165,7 @@ class Server {
             this.logger.log('info', 'HTTP server closed')
             await httpsPromise()
             this.logger.log('info', 'HTTPS server closed')
+            this.running = false
         } catch (error) {
             return error
         }
