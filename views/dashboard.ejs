@@ -1,13 +1,19 @@
-<%- include('partials/sidebar', {items: projects}) %>
+<%- include('partials/sidebar', {items: projects.map(p => p.name)}) %>
 <!-- PAGE CONTENT -->
-<div class="w3-main" style="margin-left: 300px; margin-top: 43px">
+<div class="w3-main w3-container w3-padding" style="margin-left: 300px; margin-top: 43px">
     <!-- Header -->
     <header class="w3-container" style="padding-top: 22px">
         <h5>
-            <b><i class="fa fa-dashboard"></i> My Dashboard</b>
+            <b><i class="fa fa-dashboard"></i> dashboard</b>
         </h5>
     </header>
 
+    <% if (projects !== undefined) { projects.forEach(project => { %>
+    <a href="/<%= project.name %>" style="text-decoration: none"> 
+        <%- include('partials/projectCard', { project }) %> 
+    </a>
+    <% })} %>
+    
     <%- include('partials/footer') %>
 </div>
 <!-- End page content -->

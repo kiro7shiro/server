@@ -9,7 +9,7 @@
             <img src="https://www.w3schools.com/w3images/avatar2.png" class="w3-circle w3-margin-right" style="width: 46px" />
         </div>
         <div class="w3-col s8 w3-bar">
-            <span>Welcome, <strong><%= user.name %></strong></span
+            <span>welcome, <strong><%= user.name %></strong></span
             ><br />
             <a href="#" class="w3-bar-item w3-button"><i class="fa fa-envelope"></i></a>
             <a href="#" class="w3-bar-item w3-button"><i class="fa fa-user"></i></a>
@@ -18,18 +18,19 @@
     </div>
     <hr />
     <div class="w3-container">
-        <h5>Dashboard</h5>
+        <h5>dashboard</h5>
     </div>
     <div class="w3-bar-block">
-        <a href="#" class="w3-bar-item w3-button w3-padding-16 w3-hide-large w3-dark-grey w3-hover-black" onclick="w3_close()" title="close menu"
-            ><i class="fa fa-remove fa-fw"></i>&nbsp; Close Menu</a
+        <a href="#" class="w3-bar-item w3-button w3-hide-large w3-dark-grey w3-hover" onclick="w3_close()" title="close menu"
+            ><i class="fa fa-remove fa-fw"></i>&nbsp; close</a
         >
-        <% if(typeof items != 'undefined' ) { items.forEach(function(item){ %>
+        <% if(typeof items !== undefined ) { items.forEach(function(item){ %>
         <a href="/<%= item %>" class="w3-bar-item w3-button w3-padding w3-green"><i class="fa fa-users fa-fw"></i>&nbsp; <%= item %></a>
         <% })} %>
-        <a href="/dashboard" class="w3-bar-item w3-button w3-padding"><i class="fa fa-dashboard"></i>&nbsp; Dashboard</a>
-        <a href="#" class="w3-bar-item w3-button w3-padding"><i class="fa fa-cog fa-fw"></i>&nbsp; Settings</a><br />
-        <a href="/users/logout" class="w3-bar-item w3-button w3-padding"><i class="fa fa-sign-out"></i>&nbsp; Logout</a>
+        <a href="/dashboard" class="w3-bar-item w3-button w3-padding"><i class="fa fa-dashboard"></i>&nbsp; dashboard</a>
+        <a href="#" class="w3-bar-item w3-button w3-padding"><i class="fa fa-cog fa-fw"></i>&nbsp; settings</a>
+        <br />
+        <a href="/users/logout" class="w3-bar-item w3-button w3-padding"><i class="fa fa-sign-out"></i>&nbsp; logout</a>
     </div>
 </nav>
 

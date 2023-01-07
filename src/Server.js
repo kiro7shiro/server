@@ -33,7 +33,7 @@ class Server {
             https: httpsPort,
         }
         this.projects = []
-        // FIXME : projectsPath setting 
+        // FIXME : projectsPath setting
         this.projectsPath = path.resolve(process.env.PROJECTS)
         // mongodb
         const { DB_CLUSTER, DB_USER, DB_USER_PASSWORD } = process.env
@@ -53,6 +53,7 @@ class Server {
         // cors
         app.use(cors())
         // ejs
+        //app.set('views', path.resolve(__dirname, '../views'))
         app.set('view engine', 'ejs')
         app.use(ejsLayouts)
         //passport config
@@ -87,8 +88,20 @@ class Server {
      * @param {Project} project new project to be hosted
      */
     add(project) {
-        this.app.use(`/${project.name}`, ensureAuthenticated, project.app)
-        this.logger.log('info', `added route for: /${project.name}`)
+        try {
+            // self reference
+            project.app.locals.server = this
+            // views
+            const projectViews = project.app.get('views')
+            const serverViews = this.app.get('views')
+            project.app.set('views', [projectViews, serverViews])
+            // add project route
+            this.app.use(`/${project.name}`, ensureAuthenticated, project.app)
+            this.logger.log('info', `Added route for: /${project.name}`)
+        } catch (error) {
+            console.error(error)
+            return error
+        }
     }
     /**
      * Initalize the server and startup listening.
@@ -99,7 +112,8 @@ class Server {
             await this.dbConnection.connect()
             this.logger.log('info', 'Database connected')
             // projects
-            const projects = this.projects = await this.listProjects()
+            const projects = await this.listProjects()
+            this.projects = projects
             for (let pCnt = 0; pCnt < projects.length; pCnt++) {
                 const project = projects[pCnt]
                 this.add(project)
@@ -107,6 +121,7 @@ class Server {
             // startup
             await this.listen({ httpPort: this.ports.http, httpsPort: this.ports.https })
         } catch (error) {
+            console.error(error)
             return error
         }
     }
@@ -127,6 +142,7 @@ class Server {
             this.logger.log('info', `HTTPS server listening on port: ${httpsPort}`)
             this.running = true
         } catch (error) {
+            console.error(error)
             return error
         }
     }
@@ -134,21 +150,29 @@ class Server {
      * List directories in the projects folder.
      */
     async listProjects() {
+        async function asyncFilter(array, predicate) {
+            const results = await Promise.all(array.map(predicate))
+            return array.filter(function (_v, index) {
+                return results[index]
+            })
+        }
         try {
             const root = path.resolve(this.projectsPath)
             const self = path.resolve(__dirname, '../')
-            const projects = (await fs.promises.readdir(root))
-                .filter(function (item) {
-                    const file = path.resolve(root, item)
-                    return fs.statSync(file).isDirectory() && file !== self
-                })
-                .map(function (item) {
-                    const file = path.resolve(root, item)
-                    const project = new Project(file)
-                    return project
-                })
-            return projects
+            const files = await fs.promises.readdir(root)
+            const projects = await asyncFilter(files, async function (file) {
+                const name = path.resolve(root, file)
+                const stats = await fs.promises.stat(name)
+                return stats.isDirectory() && name !== self
+            })
+            const result = projects.map(function (item) {
+                const file = path.resolve(root, item)
+                const project = new Project(file)
+                return project
+            })
+            return result
         } catch (error) {
+            console.error(error)
             return error
         }
     }
@@ -167,6 +191,7 @@ class Server {
             this.logger.log('info', 'HTTPS server closed')
             this.running = false
         } catch (error) {
+            console.error(error)
             return error
         }
     }

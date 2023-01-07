@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const server = require('./index.js')
 const { logger } = server
 /**
@@ -6,6 +8,7 @@ const { logger } = server
  */
 async function main() {
     process.on('SIGINT', async function () {
+        console.log(`\n`)
         await server.terminate()
         logger.log('info', 'Server terminated')
     })
@@ -13,6 +16,7 @@ async function main() {
         logger.log('info', 'Initalize server')
         await server.initalize()
     } catch (error) {
+        logger.error(error)
         return error
     }
 }
