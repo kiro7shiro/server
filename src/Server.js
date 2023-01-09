@@ -30,7 +30,7 @@ class Server {
         this.app = app
         this.ports = {
             http: httpPort,
-            https: httpsPort,
+            https: httpsPort
         }
         this.projects = []
         // FIXME : projectsPath setting
@@ -44,7 +44,7 @@ class Server {
         this.httpsServer = https.createServer(
             {
                 key: fs.readFileSync(process.env.HTTPS_KEY),
-                cert: fs.readFileSync(process.env.HTTPS_CERT),
+                cert: fs.readFileSync(process.env.HTTPS_CERT)
             },
             app
         )
@@ -63,7 +63,7 @@ class Server {
             session({
                 secret: process.env.SESSION_SECRET,
                 resave: true,
-                saveUninitialized: true,
+                saveUninitialized: true
             })
         )
         app.use(passport.initialize())
@@ -78,7 +78,7 @@ class Server {
         })
         // self reference
         app.locals.server = this
-        // add basic routes
+        // routes
         app.use('/', require('../routes/index.js'))
         app.use('/dashboard', require('../routes/dashboard.js'))
         app.use('/users', require('../routes/users.js'))
@@ -109,7 +109,7 @@ class Server {
     async initalize() {
         try {
             // database
-            await this.dbConnection.connect()
+            await this.dbConnection.connect({ dbName: process.env.DB_NAME })
             this.logger.log('info', 'Database connected')
             // projects
             const projects = await this.listProjects()

@@ -1,10 +1,12 @@
+const path = require('path')
 const { createLogger, format, transports } = require('winston')
 
+const logPath = path.resolve(__dirname, 'logs')
 const logger = createLogger({
     level: 'info',
     format: format.combine(
         format.timestamp({
-            format: 'HH:mm:ss YYYY-MM-DD',
+            format: 'HH:mm:ss YYYY-MM-DD'
         }),
         format.errors({ stack: true }),
         format.splat(),
@@ -12,10 +14,8 @@ const logger = createLogger({
     ),
     defaultMeta: { service: 'kiros-server' },
     transports: [
-        /* Write to all logs with level `info` and below to `kiros-dev-server-combined.log`.
-        Write all logs error (and below) to `kiros-dev-server-error`. */
-        new transports.File({ filename: 'kiros-server-error.log', level: 'error' }),
-        new transports.File({ filename: 'kiros-server-combined.log', options: { flags: 'w' } })
+        new transports.File({ filename: `${logPath}/kiros-server-error.log`, level: 'error' }),
+        new transports.File({ filename: `${logPath}/kiros-server-combined.log`, options: { flags: 'w' } })
     ]
 })
 // If we're not in production then **ALSO** log to the `console`.
@@ -25,9 +25,10 @@ if (process.env.NODE_ENV !== 'production') {
             format: format.combine(
                 format.colorize(),
                 format.printf(function (info) {
-                    return `[${info.level}] ${info.timestamp}: ${info.message}`
+                    const { level, timestamp, message, service } = info
+                    return `[${service}][${level}] ${timestamp}: ${message}`
                 })
-            ),
+            )
         })
     )
 }

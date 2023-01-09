@@ -6,7 +6,7 @@ class Project {
         this.name = path.parse(pathname).base
     }
     get app() {
-        return require(`${this.path}/index.js`)
+        return require(`${this.path}/index.js`).app
     }
 }
 

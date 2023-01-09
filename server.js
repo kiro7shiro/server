@@ -13,8 +13,9 @@ async function main() {
         logger.log('info', 'Server terminated')
     })
     try {
-        logger.log('info', 'Initalize server')
+        logger.log('info', 'Initalizing...')
         await server.initalize()
+        logger.log('info', '...done')
     } catch (error) {
         logger.error(error)
         return error

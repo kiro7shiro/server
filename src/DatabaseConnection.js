@@ -7,9 +7,9 @@ class DatabaseConnection {
         this.connected = false
         uri = `mongodb+srv://${user}:${password}@${cluster}/?retryWrites=true&w=majority`
     }
-    async connect() {
+    async connect(options = {}) {
         try {
-            await mongoose.connect(uri)
+            await mongoose.connect(uri, options)
             this.connected = true
         } catch (error) {
             return error
