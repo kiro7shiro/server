@@ -18,14 +18,18 @@
     </div>
     <hr />
     <div class="w3-container">
+        <% if (typeof title != 'undefined') { %>
+        <h5><%= title %> - dashboard</h5>
+        <% } else { %>
         <h5>dashboard</h5>
+        <% } %>
     </div>
     <div class="w3-bar-block">
         <a href="#" class="w3-bar-item w3-button w3-hide-large w3-dark-grey w3-hover" onclick="w3_close()" title="close menu"
             ><i class="fa fa-remove fa-fw"></i>&nbsp; close</a
         >
-        <% if(typeof items !== undefined ) { items.forEach(function(item){ %>
-        <a href="/<%= item %>" class="w3-bar-item w3-button w3-padding w3-green"><i class="fa fa-users fa-fw"></i>&nbsp; <%= item %></a>
+        <% if(typeof items != 'undefined' ) { items.forEach(function(item){ %>
+        <a href="<%= item.href %>" class="w3-bar-item w3-button w3-padding w3-green"><i class="fa fa-users fa-fw"></i>&nbsp; <%= item.name %></a>
         <% })} %>
         <a href="/dashboard" class="w3-bar-item w3-button w3-padding"><i class="fa fa-dashboard"></i>&nbsp; dashboard</a>
         <a href="#" class="w3-bar-item w3-button w3-padding"><i class="fa fa-cog fa-fw"></i>&nbsp; settings</a>

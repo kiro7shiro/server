@@ -1,4 +1,4 @@
-<%- include('partials/sidebar', {items: projects.map(p => p.name)}) %>
+<%- include('partials/sidebar', { items: projects, title }) %>
 <!-- PAGE CONTENT -->
 <div class="w3-main w3-container w3-padding" style="margin-left: 300px; margin-top: 43px">
     <!-- Header -->
@@ -9,11 +9,9 @@
     </header>
 
     <% if (projects !== undefined) { projects.forEach(project => { %>
-    <a href="/<%= project.name %>" style="text-decoration: none"> 
+    <a href="<%= project.href %>" style="text-decoration: none"> 
         <%- include('partials/projectCard', { project }) %> 
     </a>
-    <% })} %>
-    
-    <%- include('partials/footer') %>
+    <% })} %> <%- include('partials/footer') %>
 </div>
 <!-- End page content -->
