@@ -20,4 +20,5 @@ const UserSchema = new mongoose.Schema({
     }
 })
 UserSchema.plugin(passportLocalMongoose, { usernameField: 'email' })
-module.exports = mongoose.model('User', UserSchema)
+const connection = mongoose.createConnection(process.env.DB_URI, { dbName: process.env.DB_NAME })
+module.exports = connection.model('User', UserSchema)

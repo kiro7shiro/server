@@ -11,7 +11,6 @@ const passport = require('passport')
 const { promisify } = require('util')
 
 const { ensureAuthenticated } = require('../config/authorize.js')
-const { DatabaseConnection } = require('./DatabaseConnection.js')
 const { Project } = require('./Project.js')
 
 class Server {
@@ -35,9 +34,6 @@ class Server {
         this.projects = []
         // FIXME : projectsPath setting
         this.projectsPath = path.resolve(process.env.PROJECTS)
-        // mongodb
-        const { DB_CLUSTER, DB_USER, DB_USER_PASSWORD } = process.env
-        this.dbConnection = new DatabaseConnection(DB_USER, DB_USER_PASSWORD, DB_CLUSTER)
         // http
         this.running = false
         this.httpServer = http.createServer(app)
@@ -49,6 +45,7 @@ class Server {
             app
         )
         // bodyParser
+        app.use(express.json()) 
         app.use(express.urlencoded({ extended: false }))
         // cors
         app.use(cors())
@@ -108,9 +105,6 @@ class Server {
      */
     async initalize() {
         try {
-            // database
-            await this.dbConnection.connect({ dbName: process.env.DB_NAME })
-            this.logger.log('info', 'Database connected')
             // projects
             const projects = await this.listProjects()
             this.projects = projects
@@ -181,8 +175,6 @@ class Server {
      */
     async terminate() {
         try {
-            await this.dbConnection.disconnect()
-            this.logger.log('info', 'Database disconnected')
             const httpPromise = promisify(this.httpServer.close.bind(this.httpServer))
             const httpsPromise = promisify(this.httpsServer.close.bind(this.httpsServer))
             await httpPromise()

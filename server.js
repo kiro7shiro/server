@@ -11,6 +11,7 @@ async function main() {
         console.log(`\n`)
         await server.terminate()
         logger.log('info', 'Server terminated')
+        process.exit(0)
     })
     try {
         logger.log('info', 'Initalizing...')
@@ -27,5 +28,6 @@ main().catch(async function (error) {
     if (server.running) {
         await server.terminate()
         logger.log('info', 'Server terminated')
+        process.exit(1)
     }
 })
